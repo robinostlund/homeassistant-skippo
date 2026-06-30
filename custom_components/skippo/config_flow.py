@@ -3,7 +3,7 @@ import logging
 import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.helpers import selector
+from homeassistant.helpers import device_registry as dr, selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .auth import async_fetch_basic_auth
@@ -222,8 +222,14 @@ class SkippoOptionsFlow(config_entries.OptionsFlow):
             return self.async_abort(reason="no_vessels")
 
         if user_input is not None:
-            for vid in user_input.get("vessel_ids", []):
+            removed_ids: list[str] = user_input.get("vessel_ids", [])
+            for vid in removed_ids:
                 self._vessels.pop(vid, None)
+            dev_reg = dr.async_get(self.hass)
+            for vid in removed_ids:
+                device = dev_reg.async_get_device({(DOMAIN, vid)})
+                if device is not None:
+                    dev_reg.async_remove_device(device.id)
             return self._save()
 
         options = [

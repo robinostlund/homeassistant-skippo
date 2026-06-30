@@ -1,14 +1,10 @@
-import logging
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import DeviceEntry
 
 from .const import CONF_SCAN_INTERVAL, CONF_TARGET, CONF_VESSELS, DEFAULT_SCAN_INTERVAL, DEFAULT_TARGET, DOMAIN
 from .coordinator import SkippoCoordinator
-
-_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.DEVICE_TRACKER, Platform.SENSOR]
 
@@ -29,31 +25,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: SkippoConfigEntry) -> bo
     entry.runtime_data = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    _remove_stale_devices(hass, entry, vessel_ids)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
-
-
-def _remove_stale_devices(
-    hass: HomeAssistant,
-    entry: SkippoConfigEntry,
-    current_vessel_ids: set[str],
-) -> None:
-    """Remove device registry entries for vessels no longer being tracked."""
-    dev_reg = dr.async_get(hass)
-    for device_entry in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
-        vessel_id = next(
-            (ident[1] for ident in device_entry.identifiers if ident[0] == DOMAIN),
-            None,
-        )
-        if vessel_id is not None and vessel_id not in current_vessel_ids:
-            _LOGGER.debug("Removing stale device for vessel %s", vessel_id)
-            dev_reg.async_remove_device(device_entry.id)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: SkippoConfigEntry) -> None:
     """Reload entry when options change."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant,
+    entry: SkippoConfigEntry,
+    device_entry: DeviceEntry,
+) -> bool:
+    """Allow deleting a vessel device directly from the HA device UI."""
+    vessel_id = next(
+        (ident[1] for ident in device_entry.identifiers if ident[0] == DOMAIN),
+        None,
+    )
+    if vessel_id is None:
+        return False
+    vessels = dict(entry.data.get(CONF_VESSELS, {}))
+    vessels.pop(vessel_id, None)
+    hass.config_entries.async_update_entry(
+        entry, data={**entry.data, CONF_VESSELS: vessels}
+    )
+    return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: SkippoConfigEntry) -> bool:
