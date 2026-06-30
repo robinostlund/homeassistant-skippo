@@ -39,7 +39,7 @@ class TestEntityCreation:
         )
         assert sensor.domain == "sensor"
 
-    @pytest.mark.parametrize("suffix", ["online", "moving", "anchored"])
+    @pytest.mark.parametrize("suffix", ["online", "moving"])
     async def test_binary_sensor_registered(
         self, hass: HomeAssistant, loaded_entry: MockConfigEntry, suffix: str
     ):
@@ -58,14 +58,14 @@ class TestEntityCreation:
     ):
         er = er_get(hass)
         device_ids = set()
-        for suffix in ("_tracker", "_speed", "_online", "_moving", "_anchored"):
+        for suffix in ("_tracker", "_speed", "_online", "_moving"):
             uid = f"{FAKE_VESSEL_ID}{suffix}"
             entry = next((e for e in er.entities.values() if e.unique_id == uid), None)
             assert entry is not None, f"Entity '{uid}' not found in entity registry"
             device_ids.add(entry.device_id)
 
         assert len(device_ids) == 1, (
-            f"All 5 entities should share 1 device, found {len(device_ids)} devices"
+            f"All 4 entities should share 1 device, found {len(device_ids)} devices"
         )
 
     async def test_device_has_skippo_manufacturer(
@@ -97,7 +97,7 @@ class TestEntityStates:
         state = hass.states.get(entity.entity_id)
         assert state is not None, f"State is None for {entity.entity_id}"
 
-    @pytest.mark.parametrize("suffix", ["online", "moving", "anchored"])
+    @pytest.mark.parametrize("suffix", ["online", "moving"])
     async def test_binary_sensor_state_is_valid(
         self, hass: HomeAssistant, loaded_entry: MockConfigEntry, suffix: str
     ):

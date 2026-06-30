@@ -108,6 +108,27 @@ class SkippoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders={"added": str(added)},
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict | None = None
+    ) -> config_entries.FlowResult:
+        """Allow the user to change the AIS target region."""
+        entry = self._get_reconfigure_entry()
+
+        if user_input is not None:
+            return self.async_update_reload_and_abort(
+                entry,
+                data_updates={CONF_TARGET: user_input[CONF_TARGET]},
+            )
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema({
+                vol.Required(
+                    CONF_TARGET, default=entry.data.get(CONF_TARGET, DEFAULT_TARGET)
+                ): vol.In(TARGET_REGIONS),
+            }),
+        )
+
     @staticmethod
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,

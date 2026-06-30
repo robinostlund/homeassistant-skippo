@@ -5,6 +5,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_VESSELS, DOMAIN
+
+PARALLEL_UPDATES = 0
 from .coordinator import SkippoCoordinator
 from .entity_base import SkippoVesselEntity
 
