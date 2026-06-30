@@ -9,6 +9,7 @@ from homeassistant.core import HomeAssistant
 from tests.common import MockConfigEntry
 
 DOMAIN = "skippo"
+FAKE_VESSEL_ID = "265023580"
 
 _PATCH_VESSEL_EXISTS = "homeassistant.components.skippo.config_flow._vessel_exists"
 
@@ -75,15 +76,13 @@ class TestConfigFlowVesselStep:
         assert result["type"] == "form"
         assert result["errors"].get("base") == "cannot_connect"
 
-    async def test_valid_vessel_creates_entry(
-        self, hass: HomeAssistant, real_vessel_id: str
-    ):
+    async def test_valid_vessel_creates_entry(self, hass: HomeAssistant):
         flow_id = await self._start_flow(hass)
         with patch(_PATCH_VESSEL_EXISTS, return_value=(True, None)):
             result = await hass.config_entries.flow.async_configure(
                 flow_id,
                 user_input={
-                    "vessel_id": real_vessel_id,
+                    "vessel_id": FAKE_VESSEL_ID,
                     "vessel_name": "My Boat",
                     "add_another": False,
                 },
@@ -92,20 +91,18 @@ class TestConfigFlowVesselStep:
             f"Expected create_entry but got {result['type']}. "
             f"Errors: {result.get('errors')}"
         )
-        assert result["data"]["vessels"] == {real_vessel_id: "My Boat"}
+        assert result["data"]["vessels"] == {FAKE_VESSEL_ID: "My Boat"}
         assert result["data"]["target"] == "SE"
         assert "refresh_token" not in result["data"]
         assert "email" not in result["data"]
 
-    async def test_add_another_loops_back(
-        self, hass: HomeAssistant, real_vessel_id: str
-    ):
+    async def test_add_another_loops_back(self, hass: HomeAssistant):
         flow_id = await self._start_flow(hass)
         with patch(_PATCH_VESSEL_EXISTS, return_value=(True, None)):
             result = await hass.config_entries.flow.async_configure(
                 flow_id,
                 user_input={
-                    "vessel_id": real_vessel_id,
+                    "vessel_id": FAKE_VESSEL_ID,
                     "vessel_name": "First Boat",
                     "add_another": True,
                 },
@@ -127,7 +124,6 @@ class TestOptionsFlow:
         self,
         hass: HomeAssistant,
         loaded_entry: MockConfigEntry,
-        real_vessel_id: str,
     ):
         result = await hass.config_entries.options.async_init(loaded_entry.entry_id)
         result = await hass.config_entries.options.async_configure(
@@ -137,7 +133,7 @@ class TestOptionsFlow:
 
         result = await hass.config_entries.options.async_configure(
             result["flow_id"],
-            user_input={"vessel_ids": [real_vessel_id]},
+            user_input={"vessel_ids": [FAKE_VESSEL_ID]},
         )
         assert result["type"] == "create_entry"
-        assert real_vessel_id not in loaded_entry.data.get("vessels", {})
+        assert FAKE_VESSEL_ID not in loaded_entry.data.get("vessels", {})
