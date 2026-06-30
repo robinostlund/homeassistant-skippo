@@ -94,7 +94,8 @@ jobs:
         run: |
           pip install uv
           uv venv .venv
-          uv pip install --python .venv/bin/python -e ".[test]"
+          uv pip install --python .venv/bin/python -e "."
+          uv pip install --python .venv/bin/python -r requirements_test.txt
 
       - name: Copy integration into HA component tree
         run: |
