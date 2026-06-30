@@ -1,0 +1,80 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Skippo — Select region",
+        "description": "Choose the AIS region to track vessels in.",
+        "data": {
+          "target": "Region"
+        }
+      },
+      "vessel": {
+        "title": "Add vessel",
+        "description": "Enter the MMSI number or Skippo vessel ID to track. {added} vessel(s) added so far.",
+        "data": {
+          "vessel_id": "Vessel ID (MMSI or Skippo ID)",
+          "vessel_name": "Friendly name (optional)",
+          "add_another": "Add another vessel afterwards"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to reach the Skippo API — check your network connection",
+      "vessel_not_found": "Vessel not found in the selected region",
+      "vessel_already_added": "This vessel is already being tracked"
+    },
+    "abort": {
+      "already_configured": "Skippo is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Manage vessels",
+        "menu_options": {
+          "add_vessel": "Add a vessel",
+          "remove_vessel": "Remove vessel(s)"
+        }
+      },
+      "add_vessel": {
+        "title": "Add vessel",
+        "data": {
+          "vessel_id": "Vessel ID (MMSI or Skippo ID)",
+          "vessel_name": "Friendly name (optional)"
+        }
+      },
+      "remove_vessel": {
+        "title": "Remove vessel(s)",
+        "data": {
+          "vessel_ids": "Select vessels to remove"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to reach the Skippo API",
+      "vessel_not_found": "Vessel not found in the selected region",
+      "vessel_already_added": "This vessel is already being tracked"
+    },
+    "abort": {
+      "no_vessels": "No vessels configured yet"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {
+        "name": "Online"
+      },
+      "moving": {
+        "name": "Moving"
+      },
+      "anchored": {
+        "name": "Anchored"
+      }
+    },
+    "sensor": {
+      "speed": {
+        "name": "Speed"
+      }
+    }
+  }
+}

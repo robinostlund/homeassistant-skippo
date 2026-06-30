@@ -1,0 +1,133 @@
+name: Validate PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "custom_components/skippo/**"
+      - "tests/**"
+      - "requirements.txt"
+      - ".github/workflows/validate-pr.yml"
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1 — Structure & syntax (fast, no network, no HA dependency)
+  # ---------------------------------------------------------------------------
+  structure:
+    name: Structure & syntax
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install lightweight test dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run structure & syntax tests
+        run: pytest tests/test_structure.py tests/test_api.py -v --tb=short
+
+  # ---------------------------------------------------------------------------
+  # Job 2 — HA integration tests inside Home Assistant's own test environment
+  #
+  # Strategy:
+  #   1. Check out HA core (same version as declared in manifest)
+  #   2. Install HA + its test dependencies from source
+  #   3. Copy our integration into homeassistant/components/ (treated as core)
+  #   4. Copy our HA tests into tests/components/skippo/
+  #   5. Run pytest exactly as the HA team does
+  # ---------------------------------------------------------------------------
+  ha-integration:
+    name: HA integration tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    needs: structure
+
+    steps:
+      - name: Checkout this integration
+        uses: actions/checkout@v4
+        with:
+          path: skippo-integration
+
+      # Checkout HA core — pin to a recent stable release.
+      # Update this tag when bumping HA compatibility.
+      - name: Checkout Home Assistant core
+        uses: actions/checkout@v4
+        with:
+          repository: home-assistant/core
+          ref: "2025.1.4"
+          path: ha-core
+
+      - name: Read HA Python version
+        id: python-version
+        run: echo "version=$(cat ha-core/.python-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.python-version.outputs.version }}
+
+      # Cache both pip downloads and the installed packages to speed up reruns
+      - name: Cache HA dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ha-core/.venv
+          key: ha-deps-2025.1.4-${{ runner.os }}-${{ hashFiles('ha-core/requirements_test.txt', 'ha-core/pyproject.toml') }}
+          restore-keys: |
+            ha-deps-2025.1.4-${{ runner.os }}-
+
+      - name: Install Home Assistant + test dependencies
+        working-directory: ha-core
+        run: |
+          pip install uv
+          uv pip install --system -e ".[test]"
+
+      - name: Copy integration into HA component tree
+        run: |
+          cp -r skippo-integration/custom_components/skippo \
+                ha-core/homeassistant/components/skippo
+
+      - name: Copy HA-style tests into HA test tree
+        run: |
+          mkdir -p ha-core/tests/components/skippo
+          cp skippo-integration/tests/ha/*.py ha-core/tests/components/skippo/
+
+      # Write a minimal __init__.py so pytest treats it as a package
+      - name: Create test package init
+        run: touch ha-core/tests/components/skippo/__init__.py
+
+      - name: Run HA integration tests
+        working-directory: ha-core
+        run: |
+          python -m pytest tests/components/skippo/ \
+            -v --tb=short \
+            --timeout=60 \
+            -p no:sugar
+        timeout-minutes: 10
+
+  # ---------------------------------------------------------------------------
+  # Job 3 — HACS validation (checks manifest, structure, file conventions)
+  # ---------------------------------------------------------------------------
+  hacs:
+    name: HACS validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+

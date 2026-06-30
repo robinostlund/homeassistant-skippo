@@ -1,0 +1,37 @@
+{
+  "entity": {
+    "device_tracker": {
+      "vessel": {
+        "default": "mdi:sail-boat"
+      }
+    },
+    "binary_sensor": {
+      "online": {
+        "default": "mdi:broadcast-off",
+        "state": {
+          "on": "mdi:broadcast",
+          "off": "mdi:broadcast-off"
+        }
+      },
+      "moving": {
+        "default": "mdi:sail-boat",
+        "state": {
+          "on": "mdi:sail-boat",
+          "off": "mdi:anchor"
+        }
+      },
+      "anchored": {
+        "default": "mdi:anchor",
+        "state": {
+          "on": "mdi:anchor",
+          "off": "mdi:sail-boat"
+        }
+      }
+    },
+    "sensor": {
+      "speed": {
+        "default": "mdi:speedometer"
+      }
+    }
+  }
+}
