@@ -8,6 +8,11 @@ import pytest
 from homeassistant.core import HomeAssistant
 from tests.common import MockConfigEntry
 
+# Capture the real _async_update_data at import time (before any test fixture
+# patches the class attribute). This reference survives the autouse mock.
+from homeassistant.components.skippo.coordinator import SkippoCoordinator as _Coord
+_REAL_ASYNC_UPDATE_DATA = _Coord._async_update_data
+
 DOMAIN = "skippo"
 FAKE_VESSEL_ID = "265023580"
 
@@ -62,36 +67,35 @@ class TestOfflineVessel:
         hass: HomeAssistant,
         config_entry: MockConfigEntry,
     ):
-        """When a vessel disappears from mapAll, last known position is preserved."""
+        """When a vessel disappears from mapAll, last known position is preserved.
+
+        The autouse fixture replaces _async_update_data with a mock at the class
+        level. We call _REAL_ASYNC_UPDATE_DATA (captured at import time, before
+        any mock) directly on the coordinator instance, with HTTP-level helpers
+        patched at instance level so no network calls escape.
+        """
         await _setup(hass, config_entry)
         coordinator = hass.data[DOMAIN][config_entry.entry_id]
 
         initial = coordinator.data.get(FAKE_VESSEL_ID, {})
         assert initial, "No initial data — autouse mock should have set this up"
+        assert initial.get("lat") is not None, "Expected lat in initial data"
 
-        # Pre-seed _last_known as a real poll would
+        # Pre-seed _last_known as the real poll would have done
         coordinator._last_known[FAKE_VESSEL_ID] = dict(initial)
 
-        # Run the real _async_update_data (bypass autouse class-level mock by
-        # calling the method directly via the unbound class reference) with
-        # HTTP-level methods mocked to simulate vessel absent from mapAll.
-        from homeassistant.components.skippo.coordinator import SkippoCoordinator
-
+        # Call the REAL _async_update_data via the captured reference.
+        # Patch HTTP-level helpers at instance level so they don't reach the network.
         with (
-            patch.object(
-                coordinator, "_build_headers", new_callable=AsyncMock, return_value={}
-            ),
-            patch.object(
-                coordinator, "_fetch_map_all", new_callable=AsyncMock, return_value=[]
-            ),
+            patch.object(coordinator, "_build_headers", new_callable=AsyncMock, return_value={}),
+            patch.object(coordinator, "_fetch_map_all", new_callable=AsyncMock, return_value=[]),
         ):
-            result = await SkippoCoordinator._async_update_data(coordinator)
+            result = await _REAL_ASYNC_UPDATE_DATA(coordinator)
 
-        assert result, "No data returned for offline vessel"
+        assert result, "No data returned — last known should be injected"
         assert result[FAKE_VESSEL_ID]["online"] is False, (
             "Expected online=False for vessel absent from mapAll"
         )
-        if initial.get("lat") is not None:
-            assert result[FAKE_VESSEL_ID].get("lat") == initial["lat"], (
-                "Last known lat should be preserved when vessel goes offline"
-            )
+        assert result[FAKE_VESSEL_ID].get("lat") == initial["lat"], (
+            "Last known lat should be preserved when vessel goes offline"
+        )
