@@ -20,16 +20,21 @@ SKIPPO_WEB_PLAN_URL = "https://www.skippo.se/plan"
 BASIC_AUTH_FALLBACK = "d2ViQ2xpZW50OndrRGRHa0dqaEtpRnV2TjQ1eA=="
 
 # --- Polling ---
-SCAN_INTERVAL = timedelta(seconds=60)
+SCAN_INTERVAL = timedelta(seconds=60)   # fallback; real value comes from entry.data
+DEFAULT_SCAN_INTERVAL = 60              # seconds
+MIN_SCAN_INTERVAL = 30
+MAX_SCAN_INTERVAL = 3600
 
 # --- Config entry keys ---
 CONF_TARGET = "target"
+CONF_SCAN_INTERVAL = "scan_interval"
 # Dict of {vessel_id: friendly_name} stored in entry.data
 CONF_VESSELS = "vessels"
 # Used only in config/options flow forms (not stored in entry.data)
 CONF_VESSEL_ID = "vessel_id"
 CONF_VESSEL_NAME = "vessel_name"
 CONF_ADD_ANOTHER = "add_another"
+CONF_FORCE_ADD = "force_add"    # skip API verification for offline vessels
 
 # --- Region ---
 TARGET_REGIONS = ["SE", "NO", "DK", "FI"]

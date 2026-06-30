@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 import aiohttp
 from homeassistant.core import HomeAssistant
@@ -6,7 +7,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .auth import async_fetch_basic_auth, invalidate_basic_auth_cache
-from .const import API_BASE_URL, API_HEADERS, DOMAIN, SCAN_INTERVAL
+from .const import API_BASE_URL, API_HEADERS, DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,12 +50,13 @@ class SkippoCoordinator(DataUpdateCoordinator[dict[str, dict]]):
         hass: HomeAssistant,
         vessel_ids: set[str],
         target: str,
+        scan_interval: int = DEFAULT_SCAN_INTERVAL,
     ) -> None:
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=SCAN_INTERVAL,
+            update_interval=timedelta(seconds=scan_interval),
         )
         self.vessel_ids = vessel_ids
         self._base_headers = {**API_HEADERS, "target": target}
