@@ -91,8 +91,9 @@ jobs:
       - name: Install Home Assistant + test dependencies
         working-directory: ha-core
         run: |
-          pip install uv
-          uv pip install --system -e ".[test]"
+          python -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install -e ".[test]"
 
       - name: Copy integration into HA component tree
         run: |
@@ -111,7 +112,7 @@ jobs:
       - name: Run HA integration tests
         working-directory: ha-core
         run: |
-          python -m pytest tests/components/skippo/ \
+          .venv/bin/python -m pytest tests/components/skippo/ \
             -v --tb=short \
             --timeout=60 \
             -p no:sugar
