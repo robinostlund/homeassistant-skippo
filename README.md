@@ -1,6 +1,6 @@
 # Skippo — Home Assistant Integration
 
-Track vessels from [Skippo](https://www.skippo.se) directly in Home Assistant. Each tracked vessel becomes a device with GPS position, speed, online status, movement, and anchor state — all updated every 60 seconds.
+Track vessels from [Skippo](https://www.skippo.se) directly in Home Assistant. Each tracked vessel becomes a device with GPS position, speed, online status, and movement state.
 
 No Skippo account is required.
 
@@ -8,15 +8,14 @@ No Skippo account is required.
 
 ## What it does
 
-For every vessel you add, the integration creates five entities grouped under one HA device:
+For every vessel you add, the integration creates four entities grouped under one HA device:
 
 | Entity | Type | Description |
 |---|---|---|
 | Position | `device_tracker` | GPS latitude and longitude |
 | Speed | `sensor` | Speed over ground in knots |
 | Online | `binary_sensor` | Vessel is visible in the AIS/Skippo network |
-| Moving | `binary_sensor` | Vessel is currently underway |
-| Anchored | `binary_sensor` | Vessel has dropped anchor |
+| Moving | `binary_sensor` | Vessel is currently underway (≥ 1.0 kn) |
 
 If a vessel temporarily disappears from the network the last known position is kept, with the **Online** sensor showing `off`, so your dashboards and automations stay intact.
 
@@ -51,7 +50,21 @@ Go to **Settings → Devices & Services → Add integration → Skippo**.
 2. **Add vessel** — enter the vessel ID (see below) and an optional friendly name
 3. Check **Add another vessel** to track multiple boats
 
-To add or remove vessels later, open the integration and click **Configure**.
+### Adding a vessel that is currently offline
+
+If the vessel is not broadcasting AIS right now (e.g. it is in a marina), enter its ID and tick **Add anyway — vessel may currently be offline**. It will start showing data as soon as it comes online.
+
+### Managing vessels later
+
+Open the integration and click **Configure** to:
+
+- **Add a vessel** — add another boat to track
+- **Remove vessel(s)** — stop tracking selected vessels. You can also delete a vessel device directly from the device page in HA.
+- **Settings** — adjust the polling interval (30–3600 seconds, default 60 s)
+
+### Changing the region
+
+Use **⋮ → Reconfigure** on the integration card to switch to a different AIS region.
 
 ---
 
@@ -123,9 +136,13 @@ State reflects HA zone membership. Extra attributes:
 
 Speed over ground in **knots**. `unknown` when the vessel has no recent AIS fix.
 
-### `binary_sensor` — Online / Moving / Anchored
+### `binary_sensor` — Online
 
-`on` / `off`. All three remain available (showing last known state) when the vessel drops off the network.
+`on` when the vessel is visible in the AIS/Skippo network. Remains `on` as long as the vessel is broadcasting; switches to `off` when it disappears, while still showing the last known position.
+
+### `binary_sensor` — Moving
+
+`on` when speed over ground is ≥ 1.0 knots. Falls back to Skippo's own moving flag when no speed data is available.
 
 ---
 
