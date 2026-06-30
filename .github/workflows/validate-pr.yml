@@ -77,23 +77,25 @@ jobs:
         with:
           python-version: ${{ steps.python-version.outputs.version }}
 
-      # Cache both pip downloads and the installed packages to speed up reruns
-      - name: Cache HA dependencies
+      # Cache only the download caches, not the venv itself.
+      # Caching the venv risks restoring an incompatible one from a prior run.
+      - name: Cache uv/pip download caches
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pip
-            ha-core/.venv
-          key: ha-deps-2025.1.4-${{ runner.os }}-${{ hashFiles('ha-core/requirements_test.txt', 'ha-core/pyproject.toml') }}
+            ~/.cache/uv
+          key: ha-deps-v3-2025.1.4-${{ runner.os }}-${{ hashFiles('ha-core/requirements_test.txt', 'ha-core/pyproject.toml') }}
           restore-keys: |
-            ha-deps-2025.1.4-${{ runner.os }}-
+            ha-deps-v3-2025.1.4-${{ runner.os }}-
 
       - name: Install Home Assistant + test dependencies
         working-directory: ha-core
         run: |
-          python -m venv .venv
-          .venv/bin/pip install --upgrade pip
-          .venv/bin/pip install -e ".[test]"
+          pip install uv
+          uv venv .venv
+          uv pip install --python .venv/bin/python -e "."
+          uv pip install --python .venv/bin/python -r requirements_test.txt
 
       - name: Copy integration into HA component tree
         run: |
