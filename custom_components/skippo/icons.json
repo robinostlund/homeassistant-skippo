@@ -19,13 +19,6 @@
           "on": "mdi:sail-boat",
           "off": "mdi:anchor"
         }
-      },
-      "anchored": {
-        "default": "mdi:anchor",
-        "state": {
-          "on": "mdi:anchor",
-          "off": "mdi:sail-boat"
-        }
       }
     },
     "sensor": {

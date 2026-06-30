@@ -23,6 +23,7 @@ class SkippoVesselEntity(CoordinatorEntity[SkippoCoordinator]):
             name=vessel_name,
             manufacturer=MANUFACTURER,
             model=MODEL_AIS if vessel_id.isdigit() else MODEL_USER,
+            serial_number=vessel_id,
         )
 
     @property

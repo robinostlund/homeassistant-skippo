@@ -14,33 +14,44 @@
         "data": {
           "vessel_id": "Vessel ID (MMSI or Skippo ID)",
           "vessel_name": "Friendly name (optional)",
-          "add_another": "Add another vessel afterwards"
+          "add_another": "Add another vessel afterwards",
+          "force_add": "Add anyway — vessel may currently be offline"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Skippo",
+        "description": "Change the AIS tracking region. All tracked vessels will be re-checked in the new region.",
+        "data": {
+          "target": "Region"
         }
       }
     },
     "error": {
       "cannot_connect": "Unable to reach the Skippo API — check your network connection",
-      "vessel_not_found": "Vessel not found in the selected region",
+      "vessel_not_found": "Vessel not found in the selected region. Check the ID or tick 'Add anyway' if the vessel is currently offline.",
       "vessel_already_added": "This vessel is already being tracked"
     },
     "abort": {
-      "already_configured": "Skippo is already configured"
+      "already_configured": "Skippo is already configured",
+      "reconfigure_successful": "Region updated — Skippo will reload with the new region"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Manage vessels",
+        "title": "Manage Skippo",
         "menu_options": {
           "add_vessel": "Add a vessel",
-          "remove_vessel": "Remove vessel(s)"
+          "remove_vessel": "Remove vessel(s)",
+          "settings": "Settings"
         }
       },
       "add_vessel": {
         "title": "Add vessel",
         "data": {
           "vessel_id": "Vessel ID (MMSI or Skippo ID)",
-          "vessel_name": "Friendly name (optional)"
+          "vessel_name": "Friendly name (optional)",
+          "force_add": "Add anyway — vessel may currently be offline"
         }
       },
       "remove_vessel": {
@@ -48,11 +59,21 @@
         "data": {
           "vessel_ids": "Select vessels to remove"
         }
+      },
+      "settings": {
+        "title": "Settings",
+        "description": "Adjust how often Skippo polls the AIS API.",
+        "data": {
+          "scan_interval": "Polling interval"
+        },
+        "data_description": {
+          "scan_interval": "How often to fetch vessel positions (30–3600 seconds). Lower values give more live data but increase API traffic."
+        }
       }
     },
     "error": {
       "cannot_connect": "Unable to reach the Skippo API",
-      "vessel_not_found": "Vessel not found in the selected region",
+      "vessel_not_found": "Vessel not found in the selected region. Check the ID or tick 'Add anyway' if the vessel is currently offline.",
       "vessel_already_added": "This vessel is already being tracked"
     },
     "abort": {
@@ -66,9 +87,6 @@
       },
       "moving": {
         "name": "Moving"
-      },
-      "anchored": {
-        "name": "Anchored"
       }
     },
     "sensor": {

@@ -105,7 +105,7 @@ class TestIcons:
 
     def test_binary_sensor_icons_present(self, icons):
         bs = icons.get("entity", {}).get("binary_sensor", {})
-        for key in ("online", "moving", "anchored"):
+        for key in ("online", "moving"):
             assert key in bs, f"icons.json missing binary_sensor.{key}"
             assert "default" in bs[key], f"icons.json binary_sensor.{key} missing 'default'"
 
@@ -121,6 +121,32 @@ class TestIcons:
 # ---------------------------------------------------------------------------
 # Python syntax
 # ---------------------------------------------------------------------------
+
+class TestPlatformFiles:
+    def test_parallel_updates_defined(self):
+        """Each entity platform must declare PARALLEL_UPDATES."""
+        for platform in ("binary_sensor", "sensor", "device_tracker"):
+            source = (INTEGRATION / f"{platform}.py").read_text()
+            assert "PARALLEL_UPDATES" in source, (
+                f"{platform}.py missing PARALLEL_UPDATES constant (Silver quality requirement)"
+            )
+
+    def test_diagnostics_platform_exists(self):
+        assert (INTEGRATION / "diagnostics.py").exists(), (
+            "diagnostics.py is missing (Gold quality requirement)"
+        )
+
+    def test_reconfigure_step_in_config_flow(self):
+        source = (INTEGRATION / "config_flow.py").read_text()
+        assert "async_step_reconfigure" in source, (
+            "config_flow.py missing async_step_reconfigure (Platinum quality requirement)"
+        )
+
+    def test_py_typed_marker_exists(self):
+        assert (INTEGRATION / "py.typed").exists(), (
+            "py.typed marker missing (Platinum strict_typing requirement)"
+        )
+
 
 class TestPythonSyntax:
     @pytest.mark.parametrize("path", sorted(INTEGRATION.glob("*.py")))
@@ -148,6 +174,10 @@ class TestConst:
             "SKIPPO_WEB_PLAN_URL",
             "BASIC_AUTH_FALLBACK",
             "SCAN_INTERVAL",
+            "DEFAULT_SCAN_INTERVAL",
+            "MIN_SCAN_INTERVAL",
+            "MAX_SCAN_INTERVAL",
+            "CONF_SCAN_INTERVAL",
             "MANUFACTURER",
             "MODEL_AIS",
             "MODEL_USER",
