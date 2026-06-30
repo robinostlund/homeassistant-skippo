@@ -12,8 +12,10 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.DEVICE_TRACKER, Platform.SENSOR]
 
+type SkippoConfigEntry = ConfigEntry[SkippoCoordinator]
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+
+async def async_setup_entry(hass: HomeAssistant, entry: SkippoConfigEntry) -> bool:
     vessels: dict[str, str] = entry.data.get(CONF_VESSELS, {})
     vessel_ids = set(vessels.keys())
 
@@ -24,7 +26,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         scan_interval=entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
     )
     await coordinator.async_config_entry_first_refresh()
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    entry.runtime_data = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     _remove_stale_devices(hass, entry, vessel_ids)
@@ -34,7 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 def _remove_stale_devices(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: SkippoConfigEntry,
     current_vessel_ids: set[str],
 ) -> None:
     """Remove device registry entries for vessels no longer being tracked."""
@@ -49,12 +51,10 @@ def _remove_stale_devices(
             dev_reg.async_remove_device(device_entry.id)
 
 
-async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload entry when vessel list changes."""
+async def _async_update_listener(hass: HomeAssistant, entry: SkippoConfigEntry) -> None:
+    """Reload entry when options change."""
     await hass.config_entries.async_reload(entry.entry_id)
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        hass.data[DOMAIN].pop(entry.entry_id)
-    return unload_ok
+async def async_unload_entry(hass: HomeAssistant, entry: SkippoConfigEntry) -> bool:
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

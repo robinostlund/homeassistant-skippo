@@ -13,7 +13,6 @@ from tests.common import MockConfigEntry
 from homeassistant.components.skippo.coordinator import SkippoCoordinator as _Coord
 _REAL_ASYNC_UPDATE_DATA = _Coord._async_update_data
 
-DOMAIN = "skippo"
 FAKE_VESSEL_ID = "265023580"
 
 
@@ -28,14 +27,14 @@ class TestCoordinatorData:
         self, hass: HomeAssistant, config_entry: MockConfigEntry
     ):
         await _setup(hass, config_entry)
-        coordinator = hass.data[DOMAIN][config_entry.entry_id]
+        coordinator = config_entry.runtime_data
         assert isinstance(coordinator.data, dict)
 
     async def test_tracked_vessel_in_data(
         self, hass: HomeAssistant, config_entry: MockConfigEntry
     ):
         await _setup(hass, config_entry)
-        coordinator = hass.data[DOMAIN][config_entry.entry_id]
+        coordinator = config_entry.runtime_data
         assert FAKE_VESSEL_ID in coordinator.data, (
             f"Tracked vessel {FAKE_VESSEL_ID} missing from coordinator.data. "
             f"Keys present: {list(coordinator.data.keys())}"
@@ -45,7 +44,7 @@ class TestCoordinatorData:
         self, hass: HomeAssistant, config_entry: MockConfigEntry
     ):
         await _setup(hass, config_entry)
-        coordinator = hass.data[DOMAIN][config_entry.entry_id]
+        coordinator = config_entry.runtime_data
         vessel = coordinator.data[FAKE_VESSEL_ID]
         assert "online" in vessel, "Coordinator data missing 'online' flag"
         assert isinstance(vessel["online"], bool)
@@ -54,7 +53,7 @@ class TestCoordinatorData:
         self, hass: HomeAssistant, config_entry: MockConfigEntry
     ):
         await _setup(hass, config_entry)
-        coordinator = hass.data[DOMAIN][config_entry.entry_id]
+        coordinator = config_entry.runtime_data
         vessel = coordinator.data[FAKE_VESSEL_ID]
         if vessel.get("online"):
             assert "lat" in vessel, f"Online vessel missing 'lat': {vessel}"
@@ -75,7 +74,7 @@ class TestOfflineVessel:
         patched at instance level so no network calls escape.
         """
         await _setup(hass, config_entry)
-        coordinator = hass.data[DOMAIN][config_entry.entry_id]
+        coordinator = config_entry.runtime_data
 
         initial = coordinator.data.get(FAKE_VESSEL_ID, {})
         assert initial, "No initial data — autouse mock should have set this up"

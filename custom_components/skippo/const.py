@@ -25,6 +25,12 @@ DEFAULT_SCAN_INTERVAL = 60              # seconds
 MIN_SCAN_INTERVAL = 30
 MAX_SCAN_INTERVAL = 3600
 
+# --- Moving sensor ---
+# Minimum SOG in knots to consider a vessel as moving.
+# 1.0 kn matches the AIS "underway making way" convention and filters out
+# GPS drift and tidal movement at anchor (typically < 0.8 kn).
+MOVING_SPEED_THRESHOLD = 1.0
+
 # --- Config entry keys ---
 CONF_TARGET = "target"
 CONF_SCAN_INTERVAL = "scan_interval"

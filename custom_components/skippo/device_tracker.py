@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
 
 from homeassistant.components.device_tracker import SourceType, TrackerEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_VESSELS, DOMAIN
+from . import SkippoConfigEntry
+from .const import CONF_VESSELS
 
 PARALLEL_UPDATES = 0
 from .coordinator import SkippoCoordinator
@@ -14,10 +14,10 @@ from .entity_base import SkippoVesselEntity
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: SkippoConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: SkippoCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: SkippoCoordinator = entry.runtime_data
     vessels: dict[str, str] = entry.data.get(CONF_VESSELS, {})
     async_add_entities(
         SkippoDeviceTracker(coordinator, vessel_id, name)
