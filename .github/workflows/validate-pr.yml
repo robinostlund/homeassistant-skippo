@@ -91,9 +91,9 @@ jobs:
       - name: Install Home Assistant + test dependencies
         working-directory: ha-core
         run: |
-          python -m venv .venv
-          .venv/bin/pip install --upgrade pip
-          .venv/bin/pip install -e ".[test]"
+          pip install uv
+          uv venv .venv
+          uv pip install --python .venv/bin/python -e ".[test]"
 
       - name: Copy integration into HA component tree
         run: |
