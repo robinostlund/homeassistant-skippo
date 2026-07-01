@@ -4,12 +4,14 @@ from datetime import timedelta
 import aiohttp
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .auth import async_fetch_basic_auth, invalidate_basic_auth_cache
 from .const import API_BASE_URL, API_HEADERS, DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+_STORAGE_VERSION = 1
 
 
 def _parse_detail(raw: dict) -> dict:
@@ -50,6 +52,7 @@ class SkippoCoordinator(DataUpdateCoordinator[dict[str, dict]]):
         hass: HomeAssistant,
         vessel_ids: set[str],
         target: str,
+        entry_id: str,
         scan_interval: int = DEFAULT_SCAN_INTERVAL,
     ) -> None:
         super().__init__(
@@ -61,6 +64,14 @@ class SkippoCoordinator(DataUpdateCoordinator[dict[str, dict]]):
         self.vessel_ids = vessel_ids
         self._base_headers = {**API_HEADERS, "target": target}
         self._last_known: dict[str, dict] = {}
+        self._store: Store = Store(hass, _STORAGE_VERSION, f"{DOMAIN}.{entry_id}")
+
+    async def async_load_last_known(self) -> None:
+        """Restore last known vessel positions from storage (survives HA restarts)."""
+        stored = await self._store.async_load()
+        if stored and isinstance(stored, dict):
+            self._last_known = {k: v for k, v in stored.items() if k in self.vessel_ids}
+            _LOGGER.debug("Restored last known state for %d vessel(s)", len(self._last_known))
 
     @property
     def _session(self) -> aiohttp.ClientSession:
@@ -98,7 +109,7 @@ class SkippoCoordinator(DataUpdateCoordinator[dict[str, dict]]):
                     raise UpdateFailed(
                         "Skippo API returned 401 after re-scraping — check network or Skippo service"
                     )
-        except aiohttp.ClientError as err:
+        except (aiohttp.ClientError, ValueError) as err:
             raise UpdateFailed(f"Error communicating with Skippo API: {err}") from err
 
         online_ids: set[str] = set()
@@ -115,6 +126,7 @@ class SkippoCoordinator(DataUpdateCoordinator[dict[str, dict]]):
 
         # Fetch detail for online vessels to get SOG, name, dimensions
         for vessel_id in online_ids:
+            detail_ok = False
             try:
                 detail_headers = {k: v for k, v in headers.items() if k != "target"}
                 async with self._session.get(
@@ -127,10 +139,17 @@ class SkippoCoordinator(DataUpdateCoordinator[dict[str, dict]]):
                         result[vessel_id].update(
                             {k: v for k, v in parsed.items() if v is not None}
                         )
-            except aiohttp.ClientError as err:
+                        detail_ok = True
+            except Exception as err:
                 _LOGGER.debug("Could not fetch detail for %s: %s", vessel_id, err)
 
-            self._last_known[vessel_id] = result[vessel_id]
+            # Only overwrite _last_known when detail succeeded (rich data),
+            # or when this vessel has never been seen before.
+            if detail_ok or vessel_id not in self._last_known:
+                self._last_known[vessel_id] = result[vessel_id]
+
+        if online_ids:
+            await self._store.async_save(self._last_known)
 
         # Inject stale data for offline vessels
         for vessel_id in self.vessel_ids - online_ids:

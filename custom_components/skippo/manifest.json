@@ -6,6 +6,6 @@
   "documentation": "https://github.com/robinostlund/homeassistant-skippo",
   "issue_tracker": "https://github.com/robinostlund/homeassistant-skippo/issues",
   "iot_class": "cloud_polling",
-  "requirements": ["aiohttp>=3.9"],
+  "requirements": [],
   "version": "v1.0.0"
 }

@@ -19,8 +19,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SkippoConfigEntry) -> bo
         hass,
         vessel_ids=vessel_ids,
         target=entry.data.get(CONF_TARGET, DEFAULT_TARGET),
+        entry_id=entry.entry_id,
         scan_interval=entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
     )
+    await coordinator.async_load_last_known()
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
 

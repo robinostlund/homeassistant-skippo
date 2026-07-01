@@ -134,10 +134,10 @@ class SkippoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         entry = self._get_reconfigure_entry()
 
         if user_input is not None:
-            return self.async_update_reload_and_abort(
-                entry,
-                data_updates={CONF_TARGET: user_input[CONF_TARGET]},
+            self.hass.config_entries.async_update_entry(
+                entry, data={**entry.data, CONF_TARGET: user_input[CONF_TARGET]}
             )
+            return self.async_abort(reason="reconfigure_successful")
 
         return self.async_show_form(
             step_id="reconfigure",
