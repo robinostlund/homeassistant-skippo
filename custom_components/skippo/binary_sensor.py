@@ -24,6 +24,8 @@ class SkippoBinarySensorEntityDescription(BinarySensorEntityDescription):
 
 
 def _moving_value(data: dict) -> bool | None:
+    if not data.get("online", True):
+        return None
     speed = data.get("speed_knots")
     if speed is not None:
         return speed >= MOVING_SPEED_THRESHOLD
